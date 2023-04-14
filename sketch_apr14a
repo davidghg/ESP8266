@@ -1,0 +1,69 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+
+IPAddress ip (192, 168, 4, 226);
+IPAddress gateway (192, 168, 4, 1);
+IPAddress subnetmask (255, 255, 255, 0);
+
+const char* ssid = "CREATE SSID";
+const char* password = "CREATE PASSWORD";
+
+const char HTML_SEITE[] PROGMEM = R"=====( 
+<html>
+  <head>
+  <title>Web-Lichtschalter</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+</head>
+<body>
+<h1>Web-Lichtschalter</h1>
+<br>
+<a href="LED_ROT=ON"><button>Licht AN</button></a>
+<br>
+<a href="LED_ROT=OFF"><button>Licht AUS</button></a>
+</body>
+</html>
+)=====";
+
+
+ESP8266WebServer server (80);
+#define LED_ROT 15
+
+void handle_ButtonOn(){
+  digitalWrite(LED_ROT, HIGH);
+  server.send (200, "text/html", HTML_SEITE);
+}
+
+void handle_ButtonOff(){
+  digitalWrite(LED_ROT, LOW);
+  server.send (200, "text/html", HTML_SEITE);
+}
+
+void handle_ROOT(){
+  server.send (200, "text/html", HTML_SEITE);
+}
+
+void setup() {
+  pinMode(LED_ROT, OUTPUT);
+
+  Serial.begin(9600);
+
+  Serial.println("\nStarting WLAN Hotspot");
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid, password);
+  delay(500);
+
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.softAPIP());
+
+  server.on("/", handle_ROOT);
+  server.on("/LED_ROT=ON", handle_ButtonOn);
+  server.on("/LED_ROT=OFF", handle_ButtonOff);
+
+  server.begin();
+  Serial.println("HTTP Server started.\n");
+}
+
+void loop() {
+  server.handleClient();
+}
